@@ -1,0 +1,51 @@
+{% extends 'shop/basic.html' %}
+
+{% block title %} Mayinsoft.com {% endblock %}
+{% block contactactive %} active {% endblock contactactive %}
+
+{% block body %}
+<div class="container">
+    <h3>Contact Us</h3>
+    <form action="/shop/contact" method="post">{% csrf_token %}
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" class="form-control" id="name" name="name" placeholder="Enter Your Name" required>
+        </div>
+        <div class="form-group">
+           <label for="email">Email</label>
+           <input type="email" class="form-control" id="email" name="email" placeholder="Enter Your Email" required>
+        </div>
+        <div class="form-group">
+          <label for="phone">Phome</label>
+          <input type="tel" class="form-control" id="phone" name="phone" placeholder="Enter Your Phone Number" required>
+        </div>
+         
+        <div class="form-group">
+          <label for="desc">How May We Help You ?</label>
+          <textarea class="form-control" id="desc" name="desc" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Submit</button>
+    </form>
+</div>        
+{% endblock %}
+{% block js %}
+  <script>
+    // Function to update the cart count
+    function updateCartCount() {
+      // Retrieve the cart from localStorage
+      var cart = JSON.parse(localStorage.getItem('cart')) || {};
+
+      // Calculate the total number of items in the cart
+      var cartItemCount = 0;
+      for (var item in cart) {
+        cartItemCount += cart[item][0]; // Sum the quantities of all items
+      }
+
+      // Update the cart count in the navbar
+      document.getElementById('cart').innerText = cartItemCount;
+    }
+
+    // Call the function to update cart count when the page loads
+    updateCartCount();
+  </script>
+{% endblock %}

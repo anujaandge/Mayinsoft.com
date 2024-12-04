@@ -1,0 +1,122 @@
+{% extends 'shop/basic.html' %}
+
+{% block title %} Mayinsoft.com Tracker{% endblock %}
+{% block trackeractive %}active {% endblock trackeractive %}
+
+{% block body %}
+<div class="container">
+    <div class="col my-4">
+        <h2>Enter your Order Id and Email address to track your order</h2>
+        <form method="post" action="#" id="trackerForm">{% csrf_token %}
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="inputname">Order Id</label>
+                    <input type="text" class="form-control" id="orderId" name="orderId" placeholder="Order Id">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="tracker_email">Email</label>
+                    <input type="email" class="form-control" id="tracker_email" name="tracker_email" placeholder="Email">
+                </div>
+                <button type="submit" class="btn btn-primary">Track Order</button>
+            </div>
+        </form>    
+    </div>
+    <div class="col my-4">
+        <h2>Your Order Details</h2>
+        <div class="my-4">
+            <ul class="list-group" id="citems">
+            	
+            </ul>
+        </div>
+    </div>
+    <div class="col my-4">
+        <h2>Your Order Status</h2>
+        <div class="my-4">
+            <ul class="list-group" id="items">
+            	Enter your order Id and Email and click Track Order to find details about your order!
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script>
+    // Function to update the cart count
+    function updateCartCount() {
+        // Retrieve the cart from localStorage
+        var cart = JSON.parse(localStorage.getItem('cart')) || {};
+  
+        // Calculate the total number of items in the cart
+        var cartItemCount = 0;
+        for (var item in cart) {
+          cartItemCount += cart[item][0]; // Sum the quantities of all items
+        }
+  
+        // Update the cart count in the navbar
+        document.getElementById('cart').innerText = cartItemCount;
+      }
+  
+      // Call the function to update cart count when the page loads
+      updateCartCount();
+    $('#trackerForm').submit(function(event) {
+        event.preventDefault();  // Prevent the default form submission
+        $('#citems').empty();  //celar previous order details
+        $('#items').empty();  // Clear previous order status
+    
+        var formData = {
+            'orderId': $('input[name=orderId]').val(),
+            'tracker_email': $('input[name=tracker_email]').val(),
+            'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+        };
+    
+        $.ajax({
+            type: 'POST',
+            url: '/shop/tracker',
+            data: formData,
+            encode: true
+        })
+        .done(function(data) {
+            console.log(data); 
+             // Handle error in response
+            if (data.error) {
+                $('#items').append(`<li class="list-group-item">${data.error}</li>`);
+                $('#citems').append(`<li class="list-group-item">${data.error}</li>`);
+                return;
+            }
+            //Populate the order status updates
+            var updates = data.updates;
+            if (updates.length > 0) {
+                updates.forEach(function(update) {
+                    let text = update['text'];
+                    let time = update['time'];
+                    let listItem = `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                        ${text}
+                                        <span class="badge badge-primary badge-pill">${time}</span>
+                                    </li>`;
+                    $('#items').append(listItem);
+                });
+            } else {
+                $('#items').append(`<li class="list-group-item">No updates available for this order.</li>`);
+            }
+                // Populate the order details
+            var cart = data.items_data;
+            for (let item of cart) {
+                let name = item.name;  // Access name directly from each item
+                let qty = item.qty;    // Access qty directly from each item
+                let cartItem = `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                    ${name}
+                                    <span class="badge badge-primary badge-pill">${qty}</span>
+                                </li>`;
+                $('#citems').append(cartItem);
+            }    
+               
+        })
+        .fail(function() {
+            $('#items').empty();
+            $('#items').append(`<li class="list-group-item">An error occurred while fetching order details. Please try again later.</li>`);
+        });
+    });
+    
+</script>
+{% endblock %}

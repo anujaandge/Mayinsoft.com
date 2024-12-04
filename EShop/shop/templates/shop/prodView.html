@@ -1,0 +1,80 @@
+{% extends 'shop/basic.html' %}
+
+{% block title %} {{product.product_name}} -Mayinsoft.com {% endblock %}
+
+{% block body %}
+<div class="container my-4">
+    <div class="row">
+    <div class="col-md-4">
+    <div class="row">
+        <img src="/media/{{product.image}}" width="237px" height="352px">
+    </div>
+        <div class="row" padding-top=200px>
+            <button id="buyNow" class="btn btn-primary mx-3">Buy Now</button>
+            <button id="pr{{product.id}}" class="btn btn-primary cart">Add To Cart</button>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <h5>{{product.product_name}}</h5>
+        <p><b>Rs.{{product.price}} </b></p>
+        <p>{{product.desc}}</p>
+    </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+    if (localStorage.getItem('cart') == null) {
+        var cart = {};
+    } else {
+        cart = JSON.parse(localStorage.getItem('cart'));
+        updateCart(cart);
+    }
+
+    // Function to handle Add to Cart button click
+    $(document).on('click', '.cart', function () {
+        var idStr = this.id.toString();
+        var qty, name, price;
+
+        // Increment quantity if the item exists in cart, otherwise add it
+        if (cart[idStr] != undefined) {
+            qty = cart[idStr][0] + 1;
+            cart[idStr][0] = qty;
+        } else {
+            qty = 1;
+            name = document.getElementById('name' + idStr)?.innerText || "{{product.product_name}}";
+            price = document.getElementById('price' + idStr)?.innerText || {{product.price}};
+            cart[idStr] = [qty, name, parseInt(price)];
+        }
+
+        updateCart(cart);
+    });
+    
+    // Buy Now Button Click Event
+    $(document).on('click', '#buyNow', function () {
+        // Add the current product to the cart
+        var idStr = "pr{{product.id}}";
+        if (cart[idStr] != undefined) {
+            cart[idStr][0] = cart[idStr][0] + 1;
+        } else {
+            cart[idStr] = [1, "{{product.product_name}}", {{product.price}}];
+        }
+
+        // Save cart to localStorage and redirect to checkout
+        localStorage.setItem('cart', JSON.stringify(cart));
+        window.location.href = "/shop/checkout"; // Redirect to checkout page
+    });
+    // Update cart count and LocalStorage
+    function updateCart(cart) {
+        var totalItems = 0;
+        for (var item in cart) {
+            totalItems += cart[item][0];
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        document.getElementById('cart').innerHTML = totalItems; // Assuming #cart is the cart counter
+    }
+</script>
+{% endblock %} 

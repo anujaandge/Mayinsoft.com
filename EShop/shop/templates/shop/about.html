@@ -1,0 +1,74 @@
+{% extends 'shop/basic.html' %}
+
+{% block title %}AboutUS-Mayinsoft.com {% endblock %}
+{% block aboutactive %} active {% endblock aboutactive %}
+
+{% block body %}
+<main role="main">
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-3">Welcome to Mayinsoft.com!</h1>
+        <p>Mayinsoft.com is your one-stop eCommerce destination, bringing you a curated selection of quality products to meet your every need. From the latest trends to essential items, we strive to deliver excellence in both product selection and customer experience.</p>
+        <p><a class="btn btn-primary btn-lg" href="#about" role="button">Learn more &raquo;</a></p>
+      </div>
+    </div>
+  
+    <div class="container">
+      <!-- Example row of columns -->
+      <div class="row">
+        <div class="col-md-4">
+          <h2>Our Mission</h2>
+          <p>At Mayinsoft.com, our mission is to make quality products accessible to all. We focus on a customer-first approach, ensuring a seamless and satisfying shopping experience from start to finish.</p>
+          <p><a class="btn btn-secondary" href="#mission" role="button">Read More &raquo;</a></p>
+        </div>
+       
+        <div class="col-md-4">
+          <h2>Why Choose Us?</h2>
+          <p>We stand out with our hand-picked selection of top-quality items, dedicated customer support, and fast, reliable shipping. Shop with confidence knowing that we prioritize your satisfaction above all.</p>
+          <p><a class="btn btn-secondary" href="#why-us" role="button">Discover More &raquo;</a></p>
+        </div>
+        <div class="col-md-4">
+          <h2>Our Vision</h2>
+          <p>Our vision is to be a trusted name in eCommerce by continuously evolving and adapting to serve our customers’ needs, providing exceptional value, and maintaining an outstanding level of service.</p>
+          <p><a class="btn btn-secondary" href="#vision" role="button">Learn About Our Vision &raquo;</a></p>
+        </div>
+      </div>
+  
+      <hr>
+  
+    </div> <!-- /container -->
+  
+  </main>
+  
+  <footer class="container">
+    <p>&copy; Mayinsoft.com 2020-2024. All rights reserved.</p>
+  </footer>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        <script>window.jQuery || document.write('<script src="/docs/4.5/assets/js/vendor/jquery.slim.min.js"><\/script>')</script><script src="/docs/4.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-LtrjvnR4Twt/qOuYxE721u19sVFLVSA4hf/rRt6PrZTmiPltdZcI7q7PXQBYTKyf" crossorigin="anonymous"></script></body>
+  </html>
+  
+{% endblock %}
+{% block js %}
+  <script>
+    // Function to update the cart count
+    function updateCartCount() {
+      // Retrieve the cart from localStorage
+      var cart = JSON.parse(localStorage.getItem('cart')) || {};
+
+      // Calculate the total number of items in the cart
+      var cartItemCount = 0;
+      for (var item in cart) {
+        cartItemCount += cart[item][0]; // Sum the quantities of all items
+      }
+
+      // Update the cart count in the navbar
+      document.getElementById('cart').innerText = cartItemCount;
+    }
+
+    // Call the function to update cart count when the page loads
+    updateCartCount();
+  </script>
+{% endblock %}
+

@@ -1,0 +1,184 @@
+{% extends 'shop/basic.html' %}
+{% block title %} Mayinsoft.com {% endblock %}
+{% block body %}
+<div class="container" >
+   
+  <div class="col my-4">
+    <h2>Step 1 - Mayinsoft.com Express Checkout - Review Your Cart items</h2>
+    <div class="my-4">
+      <ul class="list-group" id="items">
+      </ul>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mt-3">
+            <li class="breadcrumb-item active" aria-current="page">Your Cart Total Is <b>Rs.<span id="totalPrice"></b>  </span>Enter your details below & place your order. Thanks for using My Awesome Cart!</li>
+        </ol>
+    </nav>
+    </div>
+  </div>
+
+  <div class="col my-4">
+    <h2> Step 2 - Enter Address & Other Details</h2>
+    <form action="/shop/checkout" method="post">{% csrf_token %}
+        <input type="hidden" name="itemsJson" id="itemsJson">
+        <input type="hidden" name="amount" id="amount">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="Name" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="checkout_email">Email</label>
+                 <input type="email" class="form-control" id="checkout_email" name="email" placeholder="Email" required>
+            </div>     
+        </div>
+        <div class="form-group">
+            <label for="inputAddress">Address</label>
+            <input type="text" class="form-control" id="address1" name="address1" placeholder="1234 Main St" required>
+        </div>
+        <div class="form-group">
+            <label for="inputAddress2">Address Line 2</label>
+            <input type="text" class="form-control" id="address2" name="address2" placeholder="Apartment, studio, or floor" required>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="inputCity">City</label>
+                <input type="text" class="form-control" id="city" name="city" placeholder="Enter City" required>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="inputState">State</label>
+                <input type="text" class="form-control" id="state" name="state" placeholder="Enter State" required>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="inputZip">Zip</label>
+                <input type="text" class="form-control" id="zip" name="zip_code" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="inputPhone">Phone Number</label>
+            <input type="tel" class="form-control" id="phone" name="phone" required>
+        </div>
+        <!-- Disable the button for non-logged in users -->
+        <button type="submit" class="btn btn-primary" {% if not user.is_authenticated %} disabled {% endif %}>Place Order</button>
+    </form>
+   
+
+  </div>
+  {% if not user.is_authenticated %}
+  <div class="alert alert-warning mt-4" role="alert">
+    You must be logged in to place an order. 
+    <a href="" data-toggle="modal" data-target="#loginModal">
+        Login
+      </a>
+  </div>
+{% endif %}
+</div>
+
+{% endblock %}
+
+{% block js %} 
+<script>
+    
+
+    //find out the cart item from localstorage
+    if(localStorage.getItem('cart') == null)
+    {
+    var cart={};
+    }
+    else{
+      cart= JSON.parse(localStorage.getItem('cart'));
+    }
+    console.log(cart);
+    
+    function renderCart() {
+        var sum = 0;
+        var totalPrice = 0;
+        if ($.isEmptyObject(cart)) {
+        // If object is empty
+            mystr = "<p>Your cart is empty, please add some items before checking out ! </p>"
+            $('#items').append(mystr);
+        }
+        else{
+            for (item in cart){
+                let name = cart[item][1];
+                let  qty = cart[item][0];
+                let itemPrice = cart[item][2];
+                sum = sum + qty;
+                totalPrice = totalPrice + qty * itemPrice
+                mystr=`<li class="list-group-item d-flex justify-content-between align-items-center">
+                          ${name}
+                        <div >
+                            <button class="btn btn-primary minus" data-item="${item}">-</button>
+                            <span id="val-${item}">${qty}</span>
+                            <button class="btn btn-primary plus" data-item="${item}">+</button>
+                        </div>
+                       </li>`
+                $('#items').append(mystr);       
+            }
+        }
+        document.getElementById('cart').innerHTML = sum;
+        document.getElementById('totalPrice').innerHTML = totalPrice;
+        updateHiddenFields(totalPrice);
+    
+    }
+    function updateHiddenFields(totalPrice) {
+        $('#itemsJson').val(JSON.stringify(cart));
+        $('#amount').val(totalPrice);
+    }
+    $(document).ready(function() {
+        renderCart(); // Initial render
+
+        // Event delegation for minus button
+        $('#items').on('click', '.minus', function() {
+            let cart = JSON.parse(localStorage.getItem('cart'));
+            const item = $(this).data('item');
+            
+            if (cart[item][0] > 1) {
+                cart[item][0]--;
+            } else {
+                delete cart[item];
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            $(`#val-${item}`).text(cart[item] ? cart[item][0] : 0); // Update quantity directly
+            updateCartSum();
+            updateTotalPrice()
+        });
+
+        // Event delegation for plus button
+        $('#items').on('click', '.plus', function() {
+            let cart = JSON.parse(localStorage.getItem('cart'));
+            const item = $(this).data('item');
+            
+            cart[item][0]++;
+            localStorage.setItem('cart', JSON.stringify(cart));
+            $(`#val-${item}`).text(cart[item][0]); // Update quantity directly
+            updateCartSum();
+            updateTotalPrice()
+            
+        });
+        // Function to update the total cart count
+        function updateCartSum() {
+            let sum = 0;
+            for (let item in cart) {
+                sum += cart[item][0];
+            }
+            document.getElementById('cart').innerHTML = sum;    
+        } 
+        function updateTotalPrice(){
+            let totalPrice = 0;
+            for(let item in cart) {
+                totalPrice +=cart[item][0]* cart[item][2];
+            }
+            document.getElementById('totalPrice').innerHTML = totalPrice;  
+            updateHiddenFields(totalPrice);
+        }
+    });
+  
+   {% if thank %}
+   alert("Thanks for ordering with us. Your order id is {{id}}. Use it to track your order using our order tracker")
+   localStorage.clear();
+   document.location="/shop";
+{%endif%}
+</script> 
+{% endblock%}
