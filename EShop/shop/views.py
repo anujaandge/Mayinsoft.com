@@ -6,7 +6,7 @@ from .models import Product, Contact, Order, OrderUpdate
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-
+from .forms import ContactForm
 from math import ceil
 import json
 # from .Paytm import Checksum
@@ -34,32 +34,32 @@ def about(request):
 
 def contact(request):
     if request.method=="POST":
-        name=request.POST.get('name','')
-        email=request.POST.get('email','')
-        phone=request.POST.get('phone','')
-        desc=request.POST.get('desc','')
-        contact=Contact(name=name, email=email, phone=phone, desc=desc)
-        contact.save()
-        
-        # Email to Admin
-        admin_message = f"New contact request:\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:\n{desc}"
-        send_mail(
-            subject="New Contact Request - Mayinsoft.com",
-            message=admin_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=['your admin email'],  # Replace with your admin email
-        )
-        #confirmation Email to User
-        user_message = f"Hello {name},\n\nThank you for contacting Mayinsoft.com. We have received your message:\n\n{desc}\n\nWe will get back to you shortly.\n\nBest,\nMayinsoft.com Team"
-        send_mail(
-            subject="Thank you for reaching out to Mayinsoft.com",
-            message=user_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-        )
-        # Redirect to a thank-you page or display success message
-        return redirect('contact_success')  
-    return render(request, 'shop/contact.html')
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            form.save()
+            name=form.cleaned_data.get('name')
+            email=form.cleaned_data.get('email')
+            phone=form.cleaned_data.get('phone')
+            desc=form.cleaned_data.get('desc')
+            #Email to Admin
+            admin_message = f"New contact request:\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:\n{desc}"
+            send_mail(
+                subject="New Contact Request - Mayinsoft.com",
+                message=admin_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=['your admin password'],  # Replace with your admin email
+            )
+            #confirmation Email to User
+            user_message = f"Hello {name},\n\nThank you for contacting Mayinsoft.com. We have received your message:\n\n{desc}\n\nWe will get back to you shortly.\n\nBest,\nMayinsoft.com Team"
+            send_mail(
+                subject="Thank you for reaching out to Mayinsoft.com",
+                message=user_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+            )
+            return redirect('contact_success')
+    form=ContactForm()
+    return render(request, 'shop/contact.html',{'form':form})
 
 def contact_success(request):
     return render(request, 'shop/contact_success.html')
