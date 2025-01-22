@@ -13,7 +13,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from django.contrib.messages import constants as messages
+import environ 
 
+env=environ.Env()
+env.read_env()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-w96_ss#5gb8g-09%*_v=bq4^2#ty5-86b^zy!rl%!4z@x833)l'
+SECRET_KEY='django-insecure-w96_ss#5gb8g-09%*_v=bq4^2#ty5-86b^zy!rl%!4z@x833)l'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['mayinsoft.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -134,11 +137,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email settings for sending email notifications
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'   # Or your SMTP server
-EMAIL_PORT = 587
+EMAIL_HOST = env('EMAIL_HOST')  # Or your SMTP server
+EMAIL_PORT = env('EMAIL_PORT')
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your email address' #your email address here
-EMAIL_HOST_PASSWORD = 'your pass'    #your password here
+EMAIL_HOST_USER = env('EMAIL_HOST_USER') #your email address here
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')   #your password here
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
@@ -146,4 +149,4 @@ MESSAGE_TAGS = {
     messages.ERROR:'danger'
 }
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = env("OPENAI_API_KEY")
