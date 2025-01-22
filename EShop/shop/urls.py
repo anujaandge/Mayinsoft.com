@@ -1,5 +1,9 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
+
+router = DefaultRouter()
+router.register(r'products', views.ProductViewSet)
 
 urlpatterns = [
     path('', views.index, name="ShopHome"),
@@ -11,9 +15,8 @@ urlpatterns = [
     path("products<int:myid>", views.productView, name="ProductView"), 
     path('checkout', views.checkout, name="checkout"),
     path('checkout/success', views.checkout_success, name="checkout_success"),
-    path("products", views.productView, name="productView")
+    path("products", views.productView, name="productView"),
     
-    
-    
-    # path("handlerequest/", views.handlerequest, name= "HandleRequest"), 
+    # Add the API URLs
+    path('api/', include(router.urls)),
 ]
