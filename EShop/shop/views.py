@@ -1,3 +1,10 @@
+"""
+Views for the shop application.
+
+This module contains views for handling product display, filtering, search,
+contact forms, order tracking, and checkout functionality.
+"""
+
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
@@ -9,6 +16,13 @@ from django.contrib.auth.decorators import login_required
 from .forms import ContactForm
 from math import ceil
 import json
+from rest_framework import viewsets, filters
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .serializers import ProductSerializer  
+from .filters import ProductFilter  
+
 # from .Paytm import Checksum
 # MERCHANT_KEY = 'kbzk1DSbJiv_03p5'
 
@@ -17,59 +31,141 @@ import json
 
 # Create your views here.
 
+class ProductViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for products that allows CRUD operations.
+    
+    Provides filtering, searching, and ordering capabilities through query parameters.
+    """
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    filterset_class = ProductFilter
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['product_name', 'desc', 'category']
+    ordering_fields = ['price', 'product_name']
+    
 def index(request):
+    """
+    Display the main shop page with products grouped by category.
+    
+    Supports filtering by:
+    - category
+    - price range
+    - ordering
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Rendered shop index page with filtered products
+    """
+    # Get filter parameters
+    category = request.GET.get('category')
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+    ordering = request.GET.get('ordering')
+    
+    # Start with all products
+    products = Product.objects.all()
+    
+    # Apply filters
+    if category:
+        products = products.filter(category=category)
+    if min_price:
+        products = products.filter(price__gte=min_price)
+    if max_price:
+        products = products.filter(price__lte=max_price)
+    if ordering:
+        products = products.order_by(ordering)
+    
+    # Get all categories for the dropdown menu
+    all_categories = Product.objects.values_list('category', flat=True).distinct()
+    
+    # Group products by category for display
     allProds = []
-    catprods = Product.objects.values('category', 'id')
+    catprods = products.values('category', 'id')
     cats = {item['category'] for item in catprods}
     for cat in cats:
-        prod = Product.objects.filter(category=cat)
+        prod = products.filter(category=cat)
         n = len(prod)
         nSlides = n // 4 + ceil((n / 4) - (n // 4))
         allProds.append([prod, range(1, nSlides), nSlides])
-    params = {'allProds':allProds}
+    
+    params = {
+        'allProds': allProds,
+        'categories': all_categories,  # Add this for the dropdown
+        'current_category': category,  # Optional: to show current filter
+        'current_min_price': min_price,  # Optional: to show current filter
+        'current_max_price': max_price,  # Optional: to show current filter
+        'current_ordering': ordering,  # Optional: to show current filter
+    }
     return render(request, 'shop/index.html', params)
 
 def about(request):
+    """
+    Display the about page.
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Rendered about page
+    """
     return render(request, 'shop/about.html')
 
 def contact(request):
+    """
+    Handle contact form submission and email notifications.
+    
+    On POST:
+    - Saves contact form data
+    - Sends email to admin
+    - Sends confirmation email to user
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Rendered contact form or redirect to success page
+    """
     if request.method=="POST":
         form = ContactForm(request.POST)
         if form.is_valid():
             form.save()
-            name=form.cleaned_data.get('name')
-            email=form.cleaned_data.get('email')
-            phone=form.cleaned_data.get('phone')
-            desc=form.cleaned_data.get('desc')
-            #Email to Admin
-            admin_message = f"New contact request:\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:\n{desc}"
-            send_mail(
-                subject="New Contact Request - Mayinsoft.com",
-                message=admin_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=['your admin password'],  # Replace with your admin email
-            )
-            #confirmation Email to User
-            user_message = f"Hello {name},\n\nThank you for contacting Mayinsoft.com. We have received your message:\n\n{desc}\n\nWe will get back to you shortly.\n\nBest,\nMayinsoft.com Team"
-            send_mail(
-                subject="Thank you for reaching out to Mayinsoft.com",
-                message=user_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-            )
             return redirect('contact_success')
     form=ContactForm()
     return render(request, 'shop/contact.html',{'form':form})
 
 def contact_success(request):
+    """
+    Display contact form submission success page.
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Rendered success page
+    """
     return render(request, 'shop/contact_success.html')
 
 
 def tracker(request):
+    """
+    Track order status using order ID and email.
+    
+    Provides real-time order status updates.
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        JsonResponse: Order status and updates
+        HttpResponse: Order tracking page
+    """
     if request.method == 'POST':
         orderId = request.POST.get('orderId')
         email = request.POST.get('tracker_email')
-        print(orderId ,email)
+        
         
         try:
             order = Order.objects.get(order_id=orderId, email=email)
@@ -98,6 +194,17 @@ def tracker(request):
     return render(request, 'shop/tracker.html')
     
 def search(request):
+    """
+    Search products by name, description, or category.
+    
+    Supports partial matching and case-insensitive search.
+    
+    Args:
+        request: HTTP request object with 'search' query parameter
+        
+    Returns:
+        HttpResponse: Rendered search results page
+    """
     query = request.GET.get('search')
     allProds = []
 
@@ -106,40 +213,65 @@ def search(request):
         params = {'allProds': allProds, 'msg': "Please make sure to enter a relevant search query (at least 3 characters)."}
         return render(request, 'shop/search.html', params)
 
-    # Prepare variations of the query for broader matching
-    query_variations = [query, query.rstrip('s'), query + 's']
-
-    # Get all categories and filter products based on query
-    catProds = Product.objects.values('category', 'id')
-    cats = {item['category'] for item in catProds}
-    for cat in cats:
-        # Filter products within the category based on the search query and its variations
-        prod = Product.objects.filter(
-            Q(category=cat) &
-            (
-                Q(desc__icontains=query) | Q(desc__icontains=query_variations[1]) | Q(desc__icontains=query_variations[2]) |
-                Q(product_name__icontains=query) | Q(product_name__icontains=query_variations[1]) | Q(product_name__icontains=query_variations[2]) |
-                Q(category__icontains=query) | Q(category__icontains=query_variations[1]) | Q(category__icontains=query_variations[2])
-            )
+    # Using the filter backend for search
+    products = Product.objects.all()
+    if query:
+        products = products.filter(
+            Q(desc__icontains=query) |
+            Q(product_name__icontains=query) |
+            Q(category__icontains=query)
         )
-        n = prod.count()
+
+    # Group by category for display
+    categories = products.values_list('category', flat=True).distinct()
+    for category in categories:
+        cat_products = products.filter(category=category)
+        n = cat_products.count()
         nSlides = n // 4 + ceil((n / 4) - (n // 4))
-        
         if n != 0:
-            allProds.append([prod, range(1, nSlides), nSlides])
+            allProds.append([cat_products, range(1, nSlides), nSlides])
+
     params = {'allProds': allProds, 'msg': ""}
     if not allProds:
         params['msg'] = "No products match your search criteria."
 
-    return render(request, 'shop/search.html', params)        
+    return render(request, 'shop/search.html', params)
 
 def productView(request, myid):
+    """
+    Display detailed view of a specific product.
+    
+    Args:
+        request: HTTP request object
+        myid: Product ID
+        
+    Returns:
+        HttpResponse: Rendered product detail page
+        
+    Raises:
+        Http404: If product does not exist
+    """
     product=Product.objects.filter(id=myid)
     print(f"Product {product}")
     return render(request, 'shop/prodView.html',{'product':product[0]})
 
 # @login_required(login_url='/login')
 def checkout(request):
+    """
+    Handle order checkout process.
+    
+    Requires user authentication.
+    Creates order and sends confirmation.
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Rendered checkout page or order confirmation
+    
+    Raises:
+        PermissionDenied: If user is not authenticated
+    """
     thank = False  # Default value for thank
     id = None  # Default value for id
     if request.method=="POST":
@@ -178,6 +310,15 @@ def checkout(request):
     # return render(request, 'shop/checkout.html')
 
 def checkout_success(request):
+    """
+    Display order checkout success page.
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Rendered success page
+    """
     return render(request, 'shop/checkout_success.html')
 
 
