@@ -5,6 +5,7 @@ This module contains views for handling product display, filtering, search,
 contact forms, order tracking, and checkout functionality.
 """
 
+import logging  # Import logging module
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
@@ -26,8 +27,8 @@ from .filters import ProductFilter
 # from .Paytm import Checksum
 # MERCHANT_KEY = 'kbzk1DSbJiv_03p5'
 
-
-
+# Create a logger instance
+logger = logging.getLogger("django")
 
 # Create your views here.
 
@@ -59,6 +60,7 @@ def index(request):
     Returns:
         HttpResponse: Rendered shop index page with filtered products
     """
+    logger.debug("Index view called")  # Add logging statement
     # Get filter parameters
     category = request.GET.get('category')
     min_price = request.GET.get('min_price')
@@ -77,10 +79,7 @@ def index(request):
         products = products.filter(price__lte=max_price)
     if ordering:
         products = products.order_by(ordering)
-    
-    # Get all categories for the dropdown menu
-    all_categories = Product.objects.values_list('category', flat=True).distinct()
-    
+        
     # Group products by category for display
     allProds = []
     catprods = products.values('category', 'id')
@@ -93,7 +92,6 @@ def index(request):
     
     params = {
         'allProds': allProds,
-        'categories': all_categories,  # Add this for the dropdown
         'current_category': category,  # Optional: to show current filter
         'current_min_price': min_price,  # Optional: to show current filter
         'current_max_price': max_price,  # Optional: to show current filter
@@ -111,6 +109,7 @@ def about(request):
     Returns:
         HttpResponse: Rendered about page
     """
+    logger.info("About view called")  # Add logging statement
     return render(request, 'shop/about.html')
 
 def contact(request):
@@ -128,10 +127,12 @@ def contact(request):
     Returns:
         HttpResponse: Rendered contact form or redirect to success page
     """
+    logger.info("Contact view called")  # Add logging statement
     if request.method=="POST":
         form = ContactForm(request.POST)
         if form.is_valid():
             form.save()
+            logger.info("Contact form submitted successfully")  # Add logging statement
             return redirect('contact_success')
     form=ContactForm()
     return render(request, 'shop/contact.html',{'form':form})
@@ -146,6 +147,7 @@ def contact_success(request):
     Returns:
         HttpResponse: Rendered success page
     """
+    logger.info("Contact success view called")  # Add logging statement
     return render(request, 'shop/contact_success.html')
 
 
@@ -162,10 +164,10 @@ def tracker(request):
         JsonResponse: Order status and updates
         HttpResponse: Order tracking page
     """
+    logger.info("Tracker view called")  # Add logging statement
     if request.method == 'POST':
         orderId = request.POST.get('orderId')
         email = request.POST.get('tracker_email')
-        
         
         try:
             order = Order.objects.get(order_id=orderId, email=email)
@@ -179,16 +181,18 @@ def tracker(request):
             updates = OrderUpdate.objects.filter(order_id=orderId)
             
             # Prepare the updates data as a list of dictionaries with 'text' and 'time'
-            
             updates_data = [{'text': update.update_desc, 'time': update.timestamp} for update in updates]
             
             # Prepare the items data with quantity and name extracted from items_json_data
             items_data = [{'qty': value[0], 'name': value[1]} for key, value in items_json_data.items()]
+            logger.info("Order found and updates retrieved")  # Add logging statement
             return JsonResponse({'updates': updates_data,'items_data': items_data})     # Return a JSON response with updates and items data
             
         except Order.DoesNotExist:
+            logger.error("Order not found with the provided ID and email")  # Add logging statement
             return JsonResponse({'error': 'Order not found with the provided ID and email.'})
         except Exception as e:
+            logger.error(f"An error occurred: {str(e)}")  # Add logging statement
             return JsonResponse({'error': f'An error occurred: {str(e)}'})
        
     return render(request, 'shop/tracker.html')
@@ -205,11 +209,13 @@ def search(request):
     Returns:
         HttpResponse: Rendered search results page
     """
+    logger.info("Search view called")  # Add logging statement
     query = request.GET.get('search')
     allProds = []
 
     # Check if query is valid
     if not query or len(query) < 3:
+        logger.warning("Invalid search query")  # Add logging statement
         params = {'allProds': allProds, 'msg': "Please make sure to enter a relevant search query (at least 3 characters)."}
         return render(request, 'shop/search.html', params)
 
@@ -233,6 +239,7 @@ def search(request):
 
     params = {'allProds': allProds, 'msg': ""}
     if not allProds:
+        logger.info("No products match the search criteria")  # Add logging statement
         params['msg'] = "No products match your search criteria."
 
     return render(request, 'shop/search.html', params)
@@ -251,8 +258,9 @@ def productView(request, myid):
     Raises:
         Http404: If product does not exist
     """
+    logger.info(f"Product view called for product ID: {myid}")  # Add logging statement
     product=Product.objects.filter(id=myid)
-    print(f"Product {product}")
+    #print(f"Product {product}")
     return render(request, 'shop/prodView.html',{'product':product[0]})
 
 # @login_required(login_url='/login')
@@ -272,6 +280,7 @@ def checkout(request):
     Raises:
         PermissionDenied: If user is not authenticated
     """
+    logger.info("Checkout view called")  # Add logging statement
     thank = False  # Default value for thank
     id = None  # Default value for id
     if request.method=="POST":
@@ -291,9 +300,10 @@ def checkout(request):
         update.save()
         thank=True
         id=order.order_id
+        logger.info(f"Order placed successfully with order ID: {id}")  # Add logging statement
        
-        return render(request, 'shop/checkout.html', {'thank':thank, 'id':id})
-    return render(request, 'shop/checkout.html')
+    return render(request, 'shop/checkout.html', {'thank':thank, 'id':id})
+    #return render(request, 'shop/checkout.html')
         #Request paytm to transfer the amount to your account after payment by user
         # param_dict={
         #     'MID': 'QOUWOJ07242787087025',
@@ -309,46 +319,17 @@ def checkout(request):
     #     return  render(request, 'shop/paytm.html', {'param_dict': param_dict})
     # return render(request, 'shop/checkout.html')
 
-def checkout_success(request):
-    """
-    Display order checkout success page.
+# def checkout_success(request):
+#     """
+#     Display order checkout success page.
     
-    Args:
-        request: HTTP request object
+#     Args:
+#         request: HTTP request object
         
-    Returns:
-        HttpResponse: Rendered success page
-    """
-    return render(request, 'shop/checkout_success.html')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#     Returns:
+#         HttpResponse: Rendered success page
+#     """
+#     return render(request, 'shop/checkout_success.html')
 
 # @csrf_exempt
 # def handlerequest(request):
