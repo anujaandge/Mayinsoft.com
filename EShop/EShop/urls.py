@@ -28,7 +28,7 @@ admin.site.index_title="Welcome to Mayinsoft.com Admin Panel"
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('shop/',include('shop.urls')),
-    path('blog/', include('Blog.urls')),
+    #path('blog/', include('Blog.urls')),
     path('', views.index, name='Home' ),
     path('signup', views.handleSignUp, name="handleSignUp"),
     path('login', views.handleLogin, name="handleLogin"),

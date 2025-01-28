@@ -75,6 +75,33 @@
 
 {% block body %}
 {% load static %}
+<!-- Add this below the navbar -->
+{% if current_category or current_min_price or current_max_price or current_ordering %}
+<div class="container mt-3">
+  <div class="active-filters">
+    <span class="mr-2">Active Filters:</span>
+    {% if current_category %}
+      <span class="badge badge-primary mr-2">
+        Category: {{ current_category }}
+        <a href="?{% if current_min_price %}min_price={{ current_min_price }}{% endif %}{% if current_max_price %}&max_price={{ current_max_price }}{% endif %}{% if current_ordering %}&ordering={{ current_ordering }}{% endif %}" class="text-white ml-1">&times;</a>
+      </span>
+    {% endif %}
+    {% if current_min_price or current_max_price %}
+      <span class="badge badge-primary mr-2">
+        Price: {% if current_min_price %}${{ current_min_price }}{% endif %} - {% if current_max_price %}${{ current_max_price }}{% endif %}
+        <a href="?{% if current_category %}category={{ current_category }}{% endif %}{% if current_ordering %}&ordering={{ current_ordering }}{% endif %}" class="text-white ml-1">&times;</a>
+      </span>
+    {% endif %}
+    {% if current_ordering %}
+      <span class="badge badge-primary mr-2">
+        Sorted by: {{ current_ordering|title }}
+        <a href="?{% if current_category %}category={{ current_category }}{% endif %}{% if current_min_price %}&min_price={{ current_min_price }}{% endif %}{% if current_max_price %}&max_price={{ current_max_price }}{% endif %}" class="text-white ml-1">&times;</a>
+      </span>
+    {% endif %}
+    <a href="{% url 'ShopHome' %}" class="btn btn-sm btn-outline-secondary">Clear All Filters</a>
+  </div>
+</div>
+{% endif %}
 <div class="container">
 
     <!--Slideshow starts here -->

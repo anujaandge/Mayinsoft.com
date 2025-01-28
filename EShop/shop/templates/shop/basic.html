@@ -79,6 +79,34 @@
   padding: 10px;
   cursor: pointer;
 }
+#css for nested dropdown
+.dropdown-submenu {
+  position: relative;
+}
+
+.dropdown-submenu .dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -1px;
+}
+
+.dropdown-submenu:hover > .dropdown-menu {
+  display: block;
+}
+
+.dropdown-submenu > a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
 
     
   </style>
@@ -117,6 +145,42 @@
             <a class="nav-link" href="/shop/contact">ContactUs</a>
           </li>
          
+          <!-- Add this new Filter dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="filterDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Filter Products
+            </a>
+            <div class="dropdown-menu" aria-labelledby="filterDropdown">
+              <!-- Category Submenu -->
+              <div class="dropdown-submenu">
+                <a class="dropdown-item dropdown-toggle" href="#">By Category</a>
+                <div class="dropdown-menu">
+                  {% for category in categories %}
+                    <a class="dropdown-item" href="{% url 'ShopHome' %}?category={{ category }}">{{ category }}</a>
+                  {% endfor %}
+                </div>
+              </div>
+              
+              <!-- Price Range Submenu -->
+              <div class="dropdown-submenu">
+                <a class="dropdown-item dropdown-toggle" href="#">By Price Range</a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="{% url 'ShopHome' %}?min_price=0&max_price=100">Under $100</a>
+                  <a class="dropdown-item" href="{% url 'ShopHome' %}?min_price=100&max_price=500">$100 - $500</a>
+                  <a class="dropdown-item" href="{% url 'ShopHome' %}?min_price=500&max_price=1000">$500 - $1000</a>
+                  <a class="dropdown-item" href="{% url 'ShopHome' %}?min_price=1000">Over $1000</a>
+                </div>
+              </div>
+              
+              <div class="dropdown-divider"></div>
+              <!-- Sort Options -->
+              <a class="dropdown-item" href="{% url 'ShopHome' %}?ordering=price">Price: Low to High</a>
+              <a class="dropdown-item" href="{% url 'ShopHome' %}?ordering=-price">Price: High to Low</a>
+              <a class="dropdown-item" href="{% url 'ShopHome' %}?ordering=product_name">Name: A to Z</a>
+              <a class="dropdown-item" href="{% url 'ShopHome' %}?ordering=-product_name">Name: Z to A</a>
+            </div>
+          </li>
+          
         </ul>
         <form method='get' action='/shop/search' class="form-inline my-2 my-lg-0">
           <input
@@ -179,7 +243,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <form action= "/signup" method='post'>
+        <form action= "/signup" method='post'> {% csrf_token %}
             <div class="form-group">
               <label for="username">Username</label>
               <input type="text" class="form-control" id="username" name="username" placeholder="Choose a unique username (lowercase & alphanumeric)" required>
@@ -204,7 +268,7 @@
               <label for="pass2">Confirm Password</label>
               <input type="password" class="form-control" id="pass2" name="pass2" placeholder="Enter your password again" required>
             </div>
-            {% csrf_token %}
+           
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
       </div>
@@ -349,6 +413,20 @@
               });
           }
       </script>
+      <script>
+        $(document).ready(function(){
+          $('.dropdown-submenu > a').on("click", function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).next('.dropdown-menu').toggle();
+          });
+          
+          // Close all submenus when main dropdown is closed
+          $('.dropdown').on('hide.bs.dropdown', function () {
+            $('.dropdown-submenu .dropdown-menu').hide();
+          });
+        });
+        </script>
       
        
         {% block js %} {% endblock js %}

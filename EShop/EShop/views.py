@@ -1,4 +1,5 @@
 import json
+import logging
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
@@ -12,6 +13,7 @@ from math import ceil
 # Set OpenAI API Key
 openai.api_key = settings.OPENAI_API_KEY
 # Create your views here.
+logger = logging.getLogger("django")
 
 def index(request):
     return render(request,'index.html')
@@ -46,6 +48,7 @@ def handleSignUp(request):
         myuser.last_name= lname
         myuser.save()
         messages.success(request, " Your Mayinsoft account has been successfully created")
+        logger.info("user account  created ") 
         return redirect('ShopHome')
 
     else:
@@ -61,9 +64,11 @@ def handleLogin(request):
         if user is not None:
             login(request, user)
             messages.success(request, "Successfully Logged In")
+            logger.info("Successfully Logged In") 
             return redirect("ShopHome")
         else:
             messages.error(request, "Invalid credentials! Please try again")
+            logger.warning("Invalid credentials! ") 
             return redirect("ShopHome")
 
     return HttpResponse("404- Not found")
@@ -71,6 +76,7 @@ def handleLogin(request):
 def handleLogout(request):
     logout(request)
     messages.success(request, "Successfully logged out")
+    logger.info("Logout ") 
     return redirect('ShopHome')    
         
         
